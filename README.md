@@ -31,7 +31,7 @@ This Google Apps Script allows you to leverage all of the LLM models aggregated 
 
 2. **Set Default Model**:
    - In Google Sheets, click `GPT Settings` > `Set Model`.
-   - Enter the desired default model (e.g., `openai/gpt-4`).
+   - Enter the desired default model (e.g., `openai/gpt-4o-mini-2024-07-18`). Browse all openrouter models [here](https://openrouter.ai/models)
 
 ## Usage
 
