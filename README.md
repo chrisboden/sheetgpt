@@ -1,6 +1,6 @@
 # GPT Google Sheets Integration
 
-This Google Apps Script allows you to leverage AI models like GPT-3.5 and GPT-4 directly within Google Sheets. You can set a default model and API key through the custom menu and override the default model for specific prompts as needed.
+This Google Apps Script allows you to leverage all of the LLM models aggregated by Openrouter from directly within Google Sheets. You can set a default model and API key through the custom menu and override the default model for specific prompts as needed. Openrouter usually has free models you can use. Or try the excellent and very cheap 'openai/gpt-4o-mini-2024-07-18'
 
 ## Features
 
