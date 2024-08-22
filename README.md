@@ -7,7 +7,7 @@ This Google Apps Script allows you to leverage AI models like GPT-3.5 and GPT-4 
 - **Dynamic AI Responses**: Generate AI-driven responses directly in your Google Sheets using a simple `GPT` function.
 - **Multiple Model Support**: Use different AI models for different prompts by specifying the model in the function.
 - **Default Model Configuration**: Set a default model that will be used across all prompts unless explicitly overridden.
-- **Customizable Prompts**: Build complex prompts dynamically by concatenating cell values.
+- **Customizable Prompts with Multiple Roles**: Craft complex prompts dynamically by concatenating cell values and utilizing `system`, `user`, and `assistant` roles.
 
 ## Installation
 
@@ -40,27 +40,62 @@ This Google Apps Script allows you to leverage AI models like GPT-3.5 and GPT-4 
 Use the default model set in the settings:
 
 ```plaintext
-=GPT("Provide the total number of Olympic medals at the Paris Olympics for " & A8 & ".")
+=GPT("system:you are an expert historian.;user:list the 5 major geopolitical events for the year "&A8)
 ```
 
-### Override the Model for Specific Prompts
+### Override the Model for a Specific Prompt
 
 Specify a different model for a specific prompt:
 
 ```plaintext
-=GPT("Provide the total number of Olympic medals at the Paris Olympics for " & A8 & ".", "perplexity/llama-3.1-sonar-huge-128k-online")
+=GPT("system:you are an olympics data analyst;user:provide the total number of Olympic medals at the Paris Olympics for "&A8, "perplexity/llama-3.1-sonar-huge-128k-online")
 ```
 
-### Example Prompts
+### Multi-Message Array Example
 
-- **Simple Prompt**:
-  ```plaintext
-  =GPT("Summarize the following article: " & A1)
-  ```
-- **Complex Prompt with Model Override**:
-  ```plaintext
-  =GPT("Analyze the financial data for the year " & B2 & ".", "openai/gpt-3.5-turbo")
-  ```
+The `GPT` function supports multi-message arrays, allowing you to simulate a conversation with the AI by using `system`, `user`, and `assistant` roles.
+
+**Example 1: Basic Conversation**
+
+When you don't specify a role, the script assume your prompt is for the user role. Example
+
+```plaintext
+=GPT("list the 5 major geopolitical events for the year "&A8)
+```
+
+**Example 2: Simple Multi-Message Conversation**
+
+```plaintext
+=GPT("system:you are a pirate;user:Write a peom about "&A8)
+```
+
+**Example 3: Dynamic Multi-Message Array with Cell References**
+
+Dynamically create a multi-message array using data from cells:
+
+```plaintext
+=GPT("system:you are an expert stock analyst;user:what is the latest news for "&A7&"and is it a buy or sell rating from you? Answer strictly and exactly with either 'buy' or 'sell'","perplexity/llama-3.1-sonar-huge-128k-online")
+```
+
+**Example 4: Prompt chaining
+
+Chain the result of one prompt to another:
+
+| A      | B                                                                                  | C |
+|--------------|---------------------------------------------------------------------------------------------------|-------------|
+| South Korea  | South Korea won a total of 32 medals at the 2024 Paris Olympics, consisting of 13 gold, 9 silver, and 10 bronze medals. | 13          |
+
+
+
+```plaintext
+=GPT("user:how many olympic gold medals did "&A10&"win at the Paris Olympics in 2024. Reply only with the correct number","perplexity/llama-3.1-sonar-large-128k-online")
+```
+
+```plaintext
+=GPT("system:you are a world class data cleanser;user:parse out this statement to find the number of gold medals. reply only with the number. Statement: "&B14)
+```
+
+These examples demonstrate the flexibility of the `GPT` function in handling both simple and complex interactions directly within your Google Sheets.
 
 ## Troubleshooting
 
