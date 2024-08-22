@@ -24,20 +24,17 @@ function setModel() {
 }
 
 function GPT(prompt, model) {
-  // Fetch API key from properties
   const properties = PropertiesService.getScriptProperties();
   const apiKey = properties.getProperty('OPENROUTER_API_KEY');
-  
-  // Use the provided model or fall back to the default model
   const selectedModel = model || properties.getProperty('MODEL');
 
   if (!apiKey || !selectedModel) {
+    Logger.log("Error: API Key or Model is not set.");
     return 'Error: API Key or Model is not set. Please set them using the GPT Settings menu.';
   }
 
-  // If no specific role is provided, assume 'user' role for the prompt
   let messages;
-  if (prompt.includes("system:") || prompt.includes("user:") || prompt.includes("assistant:")) {
+  if (/system\s*:/i.test(prompt) || /user\s*:/i.test(prompt) || /assistant\s*:/i.test(prompt)) {
     messages = parseMessages(prompt);
   } else {
     messages = [{
@@ -46,16 +43,14 @@ function GPT(prompt, model) {
     }];
   }
 
-  // Store the messages array as a note using a separate function
+
   storeMessagesInProperties(messages);
 
-  // Construct the API request payload
   const payload = {
     "model": selectedModel,
     "messages": messages
   };
 
-  // Make the API request
   const options = {
     "method": "post",
     "contentType": "application/json",
@@ -66,45 +61,58 @@ function GPT(prompt, model) {
   };
 
   try {
+    Logger.log("API Request Payload: " + JSON.stringify(payload, null, 2)); // Log the request payload
     const response = UrlFetchApp.fetch("https://openrouter.ai/api/v1/chat/completions", options);
     const jsonResponse = JSON.parse(response.getContentText());
-
-    // Return the AI response content
+    Logger.log("API Response: " + JSON.stringify(jsonResponse, null, 2)); // Log the response
     return jsonResponse.choices[0].message.content.trim();
   } catch (error) {
+    Logger.log("Error: " + error.message); // Log the error message
     return `Error: ${error.message}`;
   }
 }
 
+
 function parseMessages(prompt) {
   const messages = [];
-  
-  // Split the prompt based on the role delimiters
+
+  // Define the role patterns with case-insensitivity and optional space after the colon
+  const rolePatterns = {
+    "system": /^system\s*:\s*/i,
+    "user": /^user\s*:\s*/i,
+    "assistant": /^assistant\s*:\s*/i
+  };
+
+  // Split the prompt into parts based on the roles
   const parts = prompt.split(';');
-  
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i].trim();
-    
-    if (part.startsWith("system:")) {
-      messages.push({
-        "role": "system",
-        "content": part.replace("system:", "").trim()
-      });
-    } else if (part.startsWith("user:")) {
+
+  parts.forEach(part => {
+    part = part.trim();
+    let matched = false;
+
+    for (const [role, pattern] of Object.entries(rolePatterns)) {
+      if (pattern.test(part)) {
+        messages.push({
+          "role": role,
+          "content": part.replace(pattern, '').trim()
+        });
+        matched = true;
+        break;
+      }
+    }
+
+    // If no specific role is matched, treat the entire part as a user message
+    if (!matched) {
       messages.push({
         "role": "user",
-        "content": part.replace("user:", "").trim()
-      });
-    } else if (part.startsWith("assistant:")) {
-      messages.push({
-        "role": "assistant",
-        "content": part.replace("assistant:", "").trim()
+        "content": part.trim()
       });
     }
-  }
+  });
 
   return messages;
 }
+
 
 function storeMessagesInProperties(messages) {
   const activeCell = SpreadsheetApp.getActiveSpreadsheet().getActiveRange();
@@ -118,9 +126,14 @@ function addMessagesNote() {
   const cell = sheet.getActiveRange();
   const cellAddress = cell.getA1Notation();
   const messagesJson = PropertiesService.getDocumentProperties().getProperty(cellAddress);
+
+  // Fetch the execution logs
+  const logs = Logger.getLog();
+  const lastLogEntry = logs.split('\n').pop(); // Get the last log entry
   
   if (messagesJson) {
-    cell.setNote(messagesJson);
+    const noteContent = `Messages JSON: ${messagesJson}\n\nLast Log Entry:\n${lastLogEntry}`;
+    cell.setNote(noteContent);
   } else {
     SpreadsheetApp.getUi().alert("No message array found for this cell.");
   }
