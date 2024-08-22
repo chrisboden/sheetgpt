@@ -105,3 +105,7 @@ These examples demonstrate the flexibility of the `GPT` function in handling bot
 ## License
 
 This script is free to use and modify under the MIT License.
+
+# Prompt Playground
+
+The script has been integrated into [this Google Sheet](https://docs.google.com/spreadsheets/d/196kX19rz7vH-aRvuiavzXR8KxlI3ukT0G3RHzKDX8w0/edit?usp=sharing) that teaches you how to do advanced prompting. The sheet is adapted from the Claude for Sheets workbook from Anthropic. You can use the claude LLM's via OpenRouter if you choose.
