@@ -66,7 +66,7 @@ When you don't specify a role, the script assume your prompt is for the user rol
 **Example 2: Simple Multi-Message Conversation**
 
 ```plaintext
-=GPT("system:you are a pirate;user:Write a peom about "&A8)
+=GPT("system:you are a pirate;user:Write a poem about "&A8)
 ```
 
 **Example 3: Dynamic Multi-Message Array with Cell References**
