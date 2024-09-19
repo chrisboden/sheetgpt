@@ -4,6 +4,7 @@ function onOpen() {
     .addItem('Set API Key', 'setApiKey')
     .addItem('Set Model', 'setModel')
     .addItem('Add Messages Note', 'addMessagesNote')
+    .addItem('Clear Cache', 'clearCache')
     .addToUi();
 }
 
@@ -11,7 +12,7 @@ function setApiKey() {
   const ui = SpreadsheetApp.getUi();
   const response = ui.prompt('Enter your OpenRouter API Key');
   const apiKey = response.getResponseText();
-  PropertiesService.getScriptProperties().setProperty('OPENROUTER_API_KEY', apiKey);
+  PropertiesService.getUserProperties().setProperty('OPENROUTER_API_KEY', apiKey);
   ui.alert('API Key has been set.');
 }
 
@@ -19,18 +20,29 @@ function setModel() {
   const ui = SpreadsheetApp.getUi();
   const response = ui.prompt('Enter the GPT Model');
   const model = response.getResponseText();
-  PropertiesService.getScriptProperties().setProperty('MODEL', model);
+  PropertiesService.getUserProperties().setProperty('MODEL', model);
   ui.alert('Model has been set to: ' + model);
 }
 
-function GPT(prompt, model) {
-  const properties = PropertiesService.getScriptProperties();
+function GPT(prompt, model, bypassCache = false) {
+  const properties = PropertiesService.getUserProperties();
   const apiKey = properties.getProperty('OPENROUTER_API_KEY');
   const selectedModel = model || properties.getProperty('MODEL');
 
   if (!apiKey || !selectedModel) {
     Logger.log("Error: API Key or Model is not set.");
     return 'Error: API Key or Model is not set. Please set them using the GPT Settings menu.';
+  }
+
+  // Generate a unique cache key based on the prompt and model
+  const cacheKey = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, prompt + selectedModel));
+  
+  // Check if the result is already in the cache and bypass is not requested
+  if (!bypassCache) {
+    const cachedResult = CacheService.getUserCache().get(cacheKey);
+    if (cachedResult != null) {
+      return cachedResult;
+    }
   }
 
   let messages;
@@ -42,7 +54,6 @@ function GPT(prompt, model) {
       "content": prompt.trim()
     }];
   }
-
 
   storeMessagesInProperties(messages);
 
@@ -61,17 +72,21 @@ function GPT(prompt, model) {
   };
 
   try {
-    Logger.log("API Request Payload: " + JSON.stringify(payload, null, 2)); // Log the request payload
+    Logger.log("API Request Payload: " + JSON.stringify(payload, null, 2));
     const response = UrlFetchApp.fetch("https://openrouter.ai/api/v1/chat/completions", options);
     const jsonResponse = JSON.parse(response.getContentText());
-    Logger.log("API Response: " + JSON.stringify(jsonResponse, null, 2)); // Log the response
-    return jsonResponse.choices[0].message.content.trim();
+    Logger.log("API Response: " + JSON.stringify(jsonResponse, null, 2));
+    const result = jsonResponse.choices[0].message.content.trim();
+    
+    // Cache the result for future use
+    CacheService.getUserCache().put(cacheKey, result, 21600); // Cache for 6 hours
+    
+    return result;
   } catch (error) {
-    Logger.log("Error: " + error.message); // Log the error message
+    Logger.log("Error: " + error.message);
     return `Error: ${error.message}`;
   }
 }
-
 
 function parseMessages(prompt) {
   const messages = [];
@@ -113,7 +128,6 @@ function parseMessages(prompt) {
   return messages;
 }
 
-
 function storeMessagesInProperties(messages) {
   const activeCell = SpreadsheetApp.getActiveSpreadsheet().getActiveRange();
   const cellAddress = activeCell.getA1Notation();
@@ -137,4 +151,9 @@ function addMessagesNote() {
   } else {
     SpreadsheetApp.getUi().alert("No message array found for this cell.");
   }
+}
+
+function clearCache() {
+  CacheService.getUserCache().removeAll();
+  SpreadsheetApp.getUi().alert('Cache has been cleared.');
 }
